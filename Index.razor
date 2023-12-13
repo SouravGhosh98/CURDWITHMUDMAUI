@@ -1,0 +1,176 @@
+﻿@page "/"
+@inject IDialogService DialogService
+<h2 style="text-align:center "> ADD NEW ITEM </h2>
+<MudPaper Height="400px" Width="100%">
+    <MudContainer MaxWidth="MaxWidth.Medium">
+        <MudForm @ref="form">
+    <MudTextField @bind-Value="selectedEmployee.Name" Label="Name" Required="true" MaxLength="10" RequiredError="enter currect name"/>
+            <MudTextField @bind-Value="selectedEmployee.email" Label="Email" Required="true" MaxLength="25" RequiredError="enter currect email like(abc@gmail.com)" />
+            <MudTextField @bind-Value="selectedEmployee.phone" Label="Phone No" Required="true" MaxLength="10" RequiredError="enter currect Contact no" />
+            <MudTextField @bind-Value="selectedEmployee.age" type="Submit" Label="Age" Required="true" MaxLength="3" RequiredError="enter currect Age" />
+            <MudButton Variant="Variant.Filled" typeof="Submit" Color="Color.Primary" OnClick="AddOrUpdateEmployee">@(isEditing ? "Update" : "Add")</MudButton>
+            <MudButton Variant="Variant.Filled" typeof="Submit" Color="Color.Secondary" OnClick="ResetForm">Reset</MudButton>
+</MudForm>
+    </MudContainer>
+</MudPaper>
+ <MudContainer>
+<div>
+       <h1 style="text-align:center "> YOUR DATA TABLE </h1>
+</div>
+    <MudContainer>
+        <MudTable Items="employees" Hover="true">
+            <HeaderContent>
+                <MudTh>Id</MudTh>
+                <MudTh>NAME</MudTh>
+                <MudTh>GMAIL</MudTh>
+                <MudTh>CONTACT NO</MudTh>
+                <MudTh>AGE</MudTh>
+                <MudTh>ACTIONS</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Id</MudTd>
+                    <MudTd>@context.Name</MudTd>
+                    <MudTd>@context.email</MudTd>
+                    <MudTd>@context.phone</MudTd>
+                    <MudTd>@context.age</MudTd>
+                    <MudTd>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" @onclick="() => EditEmployee(context)" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Secondary" @onclick="() => OnButtonClicked(context)" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudContainer>
+ </MudContainer>
+    @code {
+    MudForm from = new MudForm();
+    string state = " ";
+    private List<Employee> employees = new List<Employee>
+    {
+    };
+    private List<Employee> employees1 = new List<Employee>
+    {
+    };
+    private bool isEditing = false;
+    private Employee newEmployee = new Employee();
+    private bool isEditMode = false;
+    private bool isDeleteDialogVisible = false;
+    private MudForm form;
+    private Employee selectedEmployee = new Employee();
+    <!-- Model class  Function-->
+    private class Employee
+    {
+        [EditorRequired]
+        public int Id { get; set; }
+        [EditorRequired]
+        public string Name { get; set; } = default!;
+        [EditorRequired]
+        public string email { get; set; }= default!;
+        [EditorRequired]
+        public long phone { get; set; }= default!;
+        [EditorRequired]
+        public int age { get; set; } = default!;
+    }
+    <!-- Delete function-->
+    private async Task OnButtonClicked(Employee employee)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            "Warning",
+            "Are you sure to Delete!",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            DeleteEmployee1(employee);
+        }
+        else
+        {
+            state = "Canceled";
+            StateHasChanged();
+        }
+    }
+    private void DeleteEmployee1(Employee employee)
+    {
+        employees.Remove(employee);
+        isDeleteDialogVisible = false;
+        state = "Deleted";
+        StateHasChanged();
+    }
+    <!-- Edit OR ADD data function -->
+    private void EditEmployee(Employee employee)
+    {
+        selectedEmployee = new Employee
+            {
+                Id = employee.Id,
+                Name = employee.Name,
+                email = employee.email,
+                phone = employee.phone,
+                age = employee.age
+            };
+        isEditing = true;
+    }
+    private void AddOrUpdateEmployee()
+    {
+        if (IsValid(selectedEmployee))
+        {
+            if (isEditing)
+            {
+                // Update 
+                var index = employees.FindIndex(e => e.Id == selectedEmployee.Id);
+                if (index != -1)
+                {
+                    employees[index] = selectedEmployee;
+                }
+            }
+            else
+            {
+                // Add
+                selectedEmployee.Id = employees.Count + 1; 
+                employees.Add(selectedEmployee);
+            }
+            // Clear
+            selectedEmployee = new Employee();
+            isEditing = false;
+        }
+    }
+
+    private bool IsValid(Employee employee)
+    {
+        return !string.IsNullOrEmpty(employee.Name)
+            //&& Regex.IsMatch(employee.Name, "^[a-zA-Z ]+$")
+            && !string.IsNullOrEmpty(employee.email);
+        // && Regex.IsMatch(employee.Email, @"^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$")
+            //&& !string.IsNullOrEmpty(employee.phone);
+        //&& Regex.IsMatch(employee.PhoneNo, "^[0-9]{10}$");
+    }
+    private void Reset1Form()
+    {
+        // Reset the form and the selected employee
+        selectedEmployee = new Employee();
+        isEditing = false;
+    }
+    private void ResetForm()
+    {
+        newEmployee = new Employee();
+        form.Reset();
+    }
+    <!-- logic for colour change  -->
+    private string GetAgeColor(object value)
+    {
+        if (value is int age)
+        {
+            if (age > 18)
+            {
+                return $"<span style=\"color: green;\">{age}</span>";
+            }
+            else if (age < 16)
+            {
+                return $"<span style=\"color: yellow; font-weight: bold;\">{age}</span>";
+            }
+            else
+            {
+                return age.ToString();
+            }
+        }
+        return string.Empty;
+    }
+}
